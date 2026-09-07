@@ -1,0 +1,218 @@
+// Content Study Lab — Prisma schema
+// SAVE -> ANALYZE -> ONE THING -> IDEA -> PLAN -> PUBLISH -> REVIEW -> PLAYBOOK
+//
+// SQLite has no native enum support, so enum-like fields are typed String
+// here and constrained to union literal types in app/lib/types.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Study {
+  id         String    @id @default(cuid())
+  title      String
+  studyType  String // LEARNED | REFERENCE | INSIGHT
+  sourceName String?
+  url        String?
+  imageUrl   String?
+  memo       String?
+  account    String   @default("COMMON") // HEYELIA | JAEJAE_MOMMY | COMMON
+  category   String?
+  importance String   @default("MEDIUM") // LOW | MEDIUM | HIGH
+  tags       String? // comma-separated
+
+  // Analysis
+  keyContent         String? // 핵심 내용
+  applicableElements String? // comma-separated: Hook,Story,Visual,Editing,CTA,Format,Positioning,Trust,기타
+  oneThing           String? // ONE THING
+
+  // Reference-only breakdown
+  refHook       String?
+  refPromise    String?
+  refStructure  String?
+  refEmotion    String?
+  refVisual     String?
+  refPayoff     String?
+  refWhyItWorks String?
+
+  // Learned-only breakdown
+  learnedWhat  String? // 무엇을 배웠는가
+  learnedWhy   String? // 왜 중요한가
+  learnedWhere String? // 어디에 적용할 수 있는가
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studyIdeaLinks StudyIdeaLink[]
+  sourcedIdeas   Idea[]          @relation("IdeaSourceStudy")
+}
+
+model Idea {
+  id        String  @id @default(cuid())
+  title     String
+  account   String  @default("HEYELIA") // HEYELIA | JAEJAE_MOMMY
+  contentIP String?
+
+  coreMessage String? // 핵심 메시지
+  memo        String? // 간단 메모
+
+  myPriority String @default("P3") // P1 | P2 | P3 | SOMEDAY
+  aiPriority Int? // reserved for future AI priority scoring
+
+  status String @default("IDEA") // IDEA | PLANNED | FILMED | EDITING | READY | PUBLISHED | REVIEWED
+
+  shootDifficulty    String  @default("MEDIUM") // EASY | MEDIUM | HARD
+  needsShoot         Boolean @default(true)
+  hasExistingFootage Boolean @default(false)
+  brandValue         String  @default("MEDIUM") // HIGH | MEDIUM | LOW
+
+  sourceStudyId String?
+  sourceStudy   Study?  @relation("IdeaSourceStudy", fields: [sourceStudyId], references: [id], onDelete: SetNull)
+  oneThing      String? // ONE THING chosen to test
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studyLinks  StudyIdeaLink[]
+  experiments Experiment[]
+}
+
+model StudyIdeaLink {
+  id        String   @id @default(cuid())
+  studyId   String
+  ideaId    String
+  createdAt DateTime @default(now())
+
+  study Study @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  idea  Idea  @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@unique([studyId, ideaId])
+}
+
+model Experiment {
+  id     String @id @default(cuid())
+  ideaId String
+  idea   Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  oneThingToTest String? // ONE THING TO TEST
+
+  hook              String?
+  coreMessage       String?
+  structureSteps    String? // newline-separated steps
+  neededShooting    String? // 필요한 촬영
+  existingFootage   String? // 사용할 기존 촬영본
+  cta               String?
+  thumbnailNote     String?
+  thumbnailImageUrl String?
+  captionMemo       String?
+
+  hypothesis String? // 실험 가설
+
+  status String @default("PLANNED") // PLANNED | FILMED | EDITING | READY | PUBLISHED | REVIEWED
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  publishedContents PublishedContent[]
+  review            Review?
+  playbookEvidence  PlaybookEvidence[]
+}
+
+model PublishedContent {
+  id           String     @id @default(cuid())
+  experimentId String
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  platform           String // INSTAGRAM | TIKTOK | YOUTUBE
+  publishedAt        DateTime?
+  actualHook         String?
+  actualThumbnailUrl String?
+  videoLength        Int? // seconds
+  url                String?
+
+  createdAt DateTime @default(now())
+
+  performance Performance?
+}
+
+model Performance {
+  id                 String           @id @default(cuid())
+  publishedContentId String           @unique
+  publishedContent   PublishedContent @relation(fields: [publishedContentId], references: [id], onDelete: Cascade)
+
+  views          Int?
+  reach          Int?
+  avgWatchTime   Float? // seconds
+  retention3s    Float? // percentage
+  completionRate Float? // percentage
+  likes          Int?
+  comments       Int?
+  saves          Int?
+  shares         Int?
+  profileVisits  Int?
+  followsGained  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Review {
+  id           String     @id @default(cuid())
+  experimentId String     @unique
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  whatWentWell   String? // 잘된 점
+  whatWasLacking String? // 부족했던 점
+  unexpected     String? // 예상과 달랐던 점
+  feelings       String? // 만들면서 느낀 점
+  whatToChange   String? // 다시 만든다면 바꿀 것
+  oneLearning    String? // 이번 콘텐츠에서 배운 한 가지
+
+  result String? // SUPPORTED | INCONCLUSIVE | NOT_SUPPORTED
+
+  whatWeLearned      String?
+  nextOneThing       String?
+  nextExperimentNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  playbookEvidence PlaybookEvidence[]
+}
+
+model PlaybookRule {
+  id          String  @id @default(cuid())
+  title       String
+  category    String  @default("OTHER") // HOOK | STORY | STRUCTURE | VISUAL | CTA | EDITING | CONVERSION | TRUST | OTHER
+  description String?
+
+  appliedAccounts  String? // comma-separated
+  appliedContentIP String?
+  memo             String?
+
+  status String @default("CANDIDATE") // CANDIDATE | VERIFIED
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  evidence PlaybookEvidence[]
+}
+
+model PlaybookEvidence {
+  id             String   @id @default(cuid())
+  playbookRuleId String
+  experimentId   String
+  reviewId       String?
+  createdAt      DateTime @default(now())
+
+  playbookRule PlaybookRule @relation(fields: [playbookRuleId], references: [id], onDelete: Cascade)
+  experiment   Experiment   @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  review       Review?      @relation(fields: [reviewId], references: [id], onDelete: SetNull)
+
+  @@unique([playbookRuleId, experimentId])
+}

@@ -8,6 +8,9 @@ const STATUS_ORDER: Record<string, number> = Object.fromEntries(
   EXPERIMENT_STATUSES.map((s, i) => [s, i])
 );
 
+// Reads the DB on every request instead of freezing a snapshot at build time.
+export const dynamic = "force-dynamic";
+
 export default async function LabPage() {
   const experiments = await prisma.experiment.findMany({
     include: { idea: true, review: true },

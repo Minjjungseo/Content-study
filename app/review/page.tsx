@@ -4,6 +4,9 @@ import { ACCOUNT_LABEL, Account } from "@/app/lib/types";
 import { ResultBadge } from "@/app/components/ui/Badge";
 import { CardLink, EmptyState, SectionHeader } from "@/app/components/ui/Card";
 
+// Reads the DB on every request instead of freezing a snapshot at build time.
+export const dynamic = "force-dynamic";
+
 export default async function ReviewPage() {
   const experiments = await prisma.experiment.findMany({
     where: { publishedContents: { some: {} } },

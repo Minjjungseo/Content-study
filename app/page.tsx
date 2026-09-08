@@ -12,6 +12,10 @@ import { Card, CardLink, EmptyState, SectionHeader } from "@/app/components/ui/C
 
 const PRIORITY_ORDER: Record<Priority, number> = { P1: 0, P2: 1, P3: 2, SOMEDAY: 3 };
 
+// Reads the DB on every request instead of freezing a snapshot at build
+// time — this page's whole point is showing the current ONE THING/Idea.
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [focusExperimentP1, focusExperimentAny, activeIdeas, recentStudies, recentReviews, counts] =
     await Promise.all([

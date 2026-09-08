@@ -27,10 +27,12 @@ SAVE → ANALYZE → ONE THING → IDEA → PLAN → PUBLISH → REVIEW → PLAY
 
    ```bash
    npm install
-   npx prisma migrate deploy   # 커밋된 마이그레이션을 그대로 적용 (스키마 변경 없음)
-   npm run db:seed             # 데모 데이터 삽입 (이미 데이터가 있으면 자동 스킵)
+   npm run build   # postinstall이 Prisma Client 생성, build가 pending migration 적용 후 next build
+   npm run db:seed # 데모 데이터 삽입 (이미 데이터가 있으면 자동 스킵)
    npm run dev
    ```
+
+   `npm run build`(`prisma migrate deploy && next build`)가 마이그레이션까지 적용하므로, 로컬 개발 중에도 이 방식이 배포 때와 동일하게 동작합니다.
 
 http://localhost:3000 에서 확인할 수 있습니다.
 
@@ -46,9 +48,18 @@ http://localhost:3000 에서 확인할 수 있습니다.
 ### Vercel 배포
 
 1. GitHub 저장소를 Vercel 프로젝트로 import 합니다.
-2. Vercel 프로젝트 설정 → Environment Variables에 `DATABASE_URL`, `DIRECT_URL`을 등록합니다.
-3. `package.json`의 `postinstall` 스크립트(`prisma generate`)가 빌드 시 자동으로 Prisma Client를 생성합니다.
-4. 마이그레이션은 Vercel 빌드에 포함되어 있지 않습니다 — Supabase DB에 스키마를 최초 적용할 때 로컬에서 한 번 `npx prisma migrate deploy`를 실행해주세요 (이후 스키마 변경 시에도 동일).
+2. Vercel 프로젝트 설정 → Environment Variables에 `DATABASE_URL`, `DIRECT_URL`을 **Production과 Preview 둘 다** 체크해서 등록합니다 (Supabase Connection string 실제 값, placeholder 아님).
+3. 이후로는 그냥 push/redeploy만 하면 됩니다 — 별도 수동 단계가 없습니다.
+
+빌드 파이프라인:
+
+```
+npm install          → postinstall: prisma generate       (Prisma Client 생성)
+npm run build        → prisma migrate deploy && next build (pending migration 적용 후 빌드)
+```
+
+- `prisma migrate deploy`는 **DIRECT_URL**로 연결해 아직 적용 안 된 마이그레이션만 적용합니다. 이미 최신 상태면 "No pending migrations to apply."만 찍고 그냥 지나갑니다 — 매 배포마다 실행해도 안전합니다(`migrate dev`나 리셋 계열 명령은 쓰지 않습니다).
+- `DATABASE_URL`/`DIRECT_URL`이 하나라도 없으면 이 단계에서 **빌드 자체가 실패**합니다(`next build`는 시작조차 하지 않음) — 잘못된 설정으로 어중간하게 배포되는 일은 없습니다.
 
 ### 알려진 제한사항
 

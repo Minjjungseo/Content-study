@@ -10,6 +10,7 @@ import {
   StudyType,
   LEVEL_LABEL,
   Level,
+  STUDY_ATTACHMENT_EXT_LABEL,
 } from "@/app/lib/types";
 import { Badge } from "@/app/components/ui/Badge";
 import { Card, SectionHeader } from "@/app/components/ui/Card";
@@ -32,6 +33,7 @@ export default async function StudyDetailPage({
     where: { id },
     include: {
       studyIdeaLinks: { include: { idea: true } },
+      attachments: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!study) notFound();
@@ -90,6 +92,30 @@ export default async function StudyDetailPage({
       {study.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={study.imageUrl} alt="" className="max-h-72 rounded-xl border border-border object-cover" />
+      )}
+
+      {study.attachments.length > 0 && (
+        <Card>
+          <SectionHeader title="첨부파일" />
+          <ul className="space-y-1.5">
+            {study.attachments.map((a) => (
+              <li key={a.id}>
+                <a
+                  href={a.fileUrl}
+                  target="_blank"
+                  className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-1.5 text-sm text-accent hover:bg-surface-hover"
+                >
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {a.fileType && STUDY_ATTACHMENT_EXT_LABEL[a.fileType]
+                      ? `[${STUDY_ATTACHMENT_EXT_LABEL[a.fileType]}] `
+                      : ""}
+                    {a.fileName}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
 
       {study.memo && (

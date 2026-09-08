@@ -128,7 +128,7 @@ export default async function HomePage() {
                       </div>
                       <p className="mt-1.5 truncate text-sm font-semibold">{i.title}</p>
                       <p className="mt-0.5 text-xs text-muted">
-                        {i.contentIP ?? "IP 미정"}
+                        {i.contentIP ?? "시리즈 미정"}
                         {" · "}
                         {i.studyLinks.length > 0 ? "Study 연결됨" : "Study 미연결"}
                       </p>

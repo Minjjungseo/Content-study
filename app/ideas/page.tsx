@@ -114,7 +114,7 @@ export default async function IdeasPage({
         </select>
         {ips.length > 0 && (
           <select name="ip" defaultValue={sp.ip ?? ""} className={`${inputClass} w-auto`}>
-            <option value="">전체 IP</option>
+            <option value="">전체 콘텐츠 시리즈</option>
             {ips.map((ip) => (
               <option key={ip} value={ip}>
                 {ip}

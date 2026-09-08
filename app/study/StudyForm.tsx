@@ -8,18 +8,27 @@ import {
   APPLICABLE_ELEMENTS,
   LEVELS,
   LEVEL_LABEL,
+  STUDY_ATTACHMENT_ACCEPT,
+  STUDY_ATTACHMENT_EXT_LABEL,
   STUDY_TYPES,
   STUDY_TYPE_LABEL,
   StudyType,
 } from "@/app/lib/types";
 import { Field, inputClass, SubmitButton } from "@/app/components/ui/Form";
+import { DeleteButton } from "@/app/components/ui/DeleteButton";
+
+type AttachmentLite = { id: string; fileName: string; fileUrl: string; fileType: string | null };
 
 export function StudyForm({
   study,
+  attachments = [],
+  onDeleteAttachment,
   action,
   submitLabel = "저장",
 }: {
   study?: Study;
+  attachments?: AttachmentLite[];
+  onDeleteAttachment?: (attachmentId: string, formData: FormData) => void;
   action: (formData: FormData) => void;
   submitLabel?: string;
 }) {
@@ -32,6 +41,39 @@ export function StudyForm({
   );
 
   return (
+    <div className="space-y-5">
+      {attachments.length > 0 && (
+        <div>
+          <p className="mb-1.5 text-xs font-medium text-muted">첨부된 파일</p>
+          <ul className="space-y-1.5">
+            {attachments.map((a) => (
+              <li
+                key={a.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-border px-2.5 py-1.5 text-xs"
+              >
+                <a
+                  href={a.fileUrl}
+                  target="_blank"
+                  className="min-w-0 flex-1 truncate font-medium text-accent"
+                >
+                  {a.fileType && STUDY_ATTACHMENT_EXT_LABEL[a.fileType]
+                    ? `[${STUDY_ATTACHMENT_EXT_LABEL[a.fileType]}] `
+                    : ""}
+                  {a.fileName}
+                </a>
+                {onDeleteAttachment && (
+                  <DeleteButton
+                    action={onDeleteAttachment.bind(null, a.id)}
+                    label="삭제"
+                    confirmMessage="이 첨부파일을 삭제할까요?"
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
     <form action={action} className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
@@ -90,7 +132,7 @@ export function StudyForm({
           />
         </Field>
 
-        <Field label="URL" htmlFor="url">
+        <Field label="원본 링크" htmlFor="url" hint="YouTube, Drive, Instagram 등 원본이 있는 곳 (선택)">
           <input
             id="url"
             name="url"
@@ -131,6 +173,23 @@ export function StudyForm({
                 className="mt-2 max-h-40 rounded-lg border border-border object-cover"
               />
             )}
+          </Field>
+        </div>
+
+        <div className="sm:col-span-2">
+          <Field
+            label="첨부파일"
+            htmlFor="attachmentFiles"
+            hint="PDF, PPT, DOC, TXT, 이미지 · 여러 개 선택 가능 (선택)"
+          >
+            <input
+              id="attachmentFiles"
+              name="attachmentFiles"
+              type="file"
+              accept={STUDY_ATTACHMENT_ACCEPT}
+              multiple
+              className={`${inputClass} file:mr-3 file:rounded-md file:border-0 file:bg-accent-soft file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-accent`}
+            />
           </Field>
         </div>
       </div>
@@ -285,5 +344,6 @@ export function StudyForm({
 
       <SubmitButton>{submitLabel}</SubmitButton>
     </form>
+    </div>
   );
 }

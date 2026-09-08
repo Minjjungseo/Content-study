@@ -13,23 +13,42 @@ function str(formData: FormData, key: string): string | null {
   return trimmed === "" ? null : trimmed;
 }
 
-async function saveImageIfPresent(formData: FormData): Promise<string | null> {
-  const file = formData.get("imageFile");
-  if (!(file instanceof File) || file.size === 0) return null;
+async function saveFileToUploads(file: File): Promise<string | null> {
   try {
     const bytes = Buffer.from(await file.arrayBuffer());
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const fileName = `${Date.now()}-${safeName}`;
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
     const uploadDir = path.join(process.cwd(), "public", "uploads");
     await mkdir(uploadDir, { recursive: true });
     await writeFile(path.join(uploadDir, fileName), bytes);
     return `/uploads/${fileName}`;
   } catch {
     // Serverless deployments (e.g. Vercel) have a read-only filesystem outside
-    // /tmp, so local file uploads can't persist there. Skip the image rather
+    // /tmp, so local file uploads can't persist there. Skip the file rather
     // than failing the whole Study save — every other field still saves.
     return null;
   }
+}
+
+async function saveImageIfPresent(formData: FormData): Promise<string | null> {
+  const file = formData.get("imageFile");
+  if (!(file instanceof File) || file.size === 0) return null;
+  return saveFileToUploads(file);
+}
+
+type NewAttachment = { fileName: string; fileUrl: string; fileType: string | null; fileSize: number };
+
+async function saveAttachmentsIfPresent(formData: FormData): Promise<NewAttachment[]> {
+  const files = formData.getAll("attachmentFiles");
+  const results: NewAttachment[] = [];
+  for (const file of files) {
+    if (!(file instanceof File) || file.size === 0) continue;
+    const fileUrl = await saveFileToUploads(file);
+    if (!fileUrl) continue;
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? null;
+    results.push({ fileName: file.name, fileUrl, fileType: ext, fileSize: file.size });
+  }
+  return results;
 }
 
 function buildStudyData(formData: FormData) {
@@ -65,8 +84,13 @@ function buildStudyData(formData: FormData) {
 export async function createStudy(formData: FormData) {
   const data = buildStudyData(formData);
   const imageUrl = await saveImageIfPresent(formData);
+  const newAttachments = await saveAttachmentsIfPresent(formData);
   const study = await prisma.study.create({
-    data: { ...data, ...(imageUrl ? { imageUrl } : {}) },
+    data: {
+      ...data,
+      ...(imageUrl ? { imageUrl } : {}),
+      ...(newAttachments.length ? { attachments: { create: newAttachments } } : {}),
+    },
   });
   revalidatePath("/study");
   revalidatePath("/");
@@ -76,9 +100,14 @@ export async function createStudy(formData: FormData) {
 export async function updateStudy(id: string, formData: FormData) {
   const data = buildStudyData(formData);
   const imageUrl = await saveImageIfPresent(formData);
+  const newAttachments = await saveAttachmentsIfPresent(formData);
   await prisma.study.update({
     where: { id },
-    data: { ...data, ...(imageUrl ? { imageUrl } : {}) },
+    data: {
+      ...data,
+      ...(imageUrl ? { imageUrl } : {}),
+      ...(newAttachments.length ? { attachments: { create: newAttachments } } : {}),
+    },
   });
   revalidatePath("/study");
   revalidatePath(`/study/${id}`);
@@ -91,6 +120,15 @@ export async function deleteStudy(id: string) {
   revalidatePath("/study");
   revalidatePath("/");
   redirect("/study");
+}
+
+export async function deleteStudyAttachment(
+  studyId: string,
+  attachmentId: string
+) {
+  await prisma.studyAttachment.delete({ where: { id: attachmentId } });
+  revalidatePath(`/study/${studyId}`);
+  revalidatePath(`/study/${studyId}/edit`);
 }
 
 export async function linkStudyToExistingIdea(

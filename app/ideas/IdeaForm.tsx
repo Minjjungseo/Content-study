@@ -65,7 +65,7 @@ export function IdeaForm({
           </select>
         </Field>
 
-        <Field label="콘텐츠 IP / 시리즈" htmlFor="contentIP">
+        <Field label="콘텐츠 시리즈" htmlFor="contentIP">
           <input
             id="contentIP"
             name="contentIP"

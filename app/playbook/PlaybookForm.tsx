@@ -68,7 +68,7 @@ export function PlaybookForm({
         </div>
       </Field>
 
-      <Field label="적용하기 좋은 콘텐츠 IP" htmlFor="appliedContentIP">
+      <Field label="적용하기 좋은 콘텐츠 시리즈" htmlFor="appliedContentIP">
         <input id="appliedContentIP" name="appliedContentIP" defaultValue={rule?.appliedContentIP ?? ""} className={inputClass} />
       </Field>
 

@@ -12,6 +12,9 @@ export const viewport = {
   themeColor: "#f7f7f8",
   width: "device-width",
   initialScale: 1,
+  // Required for env(safe-area-inset-*) to resolve to a real value on iOS —
+  // without it the bottom nav has no home-indicator clearance at all.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -20,7 +23,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <Sidebar />
         <div className="min-h-full md:pl-56">
-          <main className="mx-auto max-w-4xl px-4 pb-24 pt-6 md:px-8 md:pb-12 md:pt-8">
+          <main className="mx-auto max-w-4xl px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:pb-12 md:pt-8">
             {children}
           </main>
         </div>

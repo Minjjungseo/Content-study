@@ -52,6 +52,23 @@ model Study {
 
   studyIdeaLinks StudyIdeaLink[]
   sourcedIdeas   Idea[]          @relation("IdeaSourceStudy")
+  attachments    StudyAttachment[]
+}
+
+model StudyAttachment {
+  id       String @id @default(cuid())
+  studyId  String
+  study    Study  @relation(fields: [studyId], references: [id], onDelete: Cascade)
+
+  fileName String // original file name shown in UI
+  fileUrl  String // storage path (public/uploads)
+  fileType String? // extension, e.g. pdf/ppt/pptx/doc/docx/txt/image
+  fileSize Int? // bytes, for display only
+
+  // Reserved for future AI analysis (not implemented yet).
+  extractedText String?
+
+  createdAt DateTime @default(now())
 }
 
 model Idea {

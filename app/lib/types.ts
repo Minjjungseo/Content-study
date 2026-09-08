@@ -5,13 +5,15 @@
 export const STUDY_TYPES = ["LEARNED", "REFERENCE", "INSIGHT"] as const;
 export type StudyType = (typeof STUDY_TYPES)[number];
 
+// UI labels only — internal values (LEARNED/REFERENCE/INSIGHT) are unchanged
+// so no DB migration is needed.
 export const STUDY_TYPE_LABEL: Record<StudyType, string> = {
-  LEARNED: "배운 것",
+  LEARNED: "강의",
   REFERENCE: "레퍼런스",
-  INSIGHT: "인사이트",
+  INSIGHT: "내 스터디",
 };
 
-export const ACCOUNTS = ["HEYELIA", "JAEJAE_MOMMY", "COMMON"] as const;
+export const ACCOUNTS = ["HEYELIA", "JAEJAE_MOMMY", "MINJUNG_ALSO", "COMMON"] as const;
 export type Account = (typeof ACCOUNTS)[number];
 
 export const IDEA_ACCOUNTS = ["HEYELIA", "JAEJAE_MOMMY"] as const;
@@ -19,6 +21,7 @@ export const IDEA_ACCOUNTS = ["HEYELIA", "JAEJAE_MOMMY"] as const;
 export const ACCOUNT_LABEL: Record<Account, string> = {
   HEYELIA: "heyelia",
   JAEJAE_MOMMY: "jaejae mommy",
+  MINJUNG_ALSO: "민정 또 뭐해?",
   COMMON: "공통",
 };
 
@@ -158,4 +161,18 @@ export const CONTENT_IP_OPTIONS: Record<string, string[]> = {
     "공구",
     "기타",
   ],
+};
+
+// Study attachments: reference documents to keep, not analyze (yet).
+// Large video files are intentionally out of scope — use the 원본 링크 field instead.
+export const STUDY_ATTACHMENT_ACCEPT =
+  ".pdf,.ppt,.pptx,.doc,.docx,.txt,image/*";
+
+export const STUDY_ATTACHMENT_EXT_LABEL: Record<string, string> = {
+  pdf: "PDF",
+  ppt: "PPT",
+  pptx: "PPTX",
+  doc: "DOC",
+  docx: "DOCX",
+  txt: "TXT",
 };

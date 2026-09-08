@@ -74,7 +74,7 @@ export default async function PlaybookDetailPage({
           {accounts.length > 0 && (
             <span>적용 계정: {accounts.map((a) => ACCOUNT_LABEL[a as Account] ?? a).join(", ")}</span>
           )}
-          {rule.appliedContentIP && <span>· IP: {rule.appliedContentIP}</span>}
+          {rule.appliedContentIP && <span>· 콘텐츠 시리즈: {rule.appliedContentIP}</span>}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-3">

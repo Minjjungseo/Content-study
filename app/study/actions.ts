@@ -16,13 +16,20 @@ function str(formData: FormData, key: string): string | null {
 async function saveImageIfPresent(formData: FormData): Promise<string | null> {
   const file = formData.get("imageFile");
   if (!(file instanceof File) || file.size === 0) return null;
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const fileName = `${Date.now()}-${safeName}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(uploadDir, { recursive: true });
-  await writeFile(path.join(uploadDir, fileName), bytes);
-  return `/uploads/${fileName}`;
+  try {
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const fileName = `${Date.now()}-${safeName}`;
+    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    await mkdir(uploadDir, { recursive: true });
+    await writeFile(path.join(uploadDir, fileName), bytes);
+    return `/uploads/${fileName}`;
+  } catch {
+    // Serverless deployments (e.g. Vercel) have a read-only filesystem outside
+    // /tmp, so local file uploads can't persist there. Skip the image rather
+    // than failing the whole Study save — every other field still saves.
+    return null;
+  }
 }
 
 function buildStudyData(formData: FormData) {

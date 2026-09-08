@@ -1,16 +1,18 @@
 // Content Study Lab — Prisma schema
 // SAVE -> ANALYZE -> ONE THING -> IDEA -> PLAN -> PUBLISH -> REVIEW -> PLAYBOOK
 //
-// SQLite has no native enum support, so enum-like fields are typed String
-// here and constrained to union literal types in app/lib/types.ts.
+// Enum-like fields are typed String (kept from the original SQLite schema)
+// and constrained to union literal types in app/lib/types.ts.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Study {

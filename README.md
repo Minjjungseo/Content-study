@@ -10,19 +10,49 @@ SAVE → ANALYZE → ONE THING → IDEA → PLAN → PUBLISH → REVIEW → PLAY
 
 - Next.js (App Router) + TypeScript
 - Tailwind CSS v4
-- Prisma + SQLite (로컬 파일 DB, `prisma/dev.db`)
+- Prisma + Supabase PostgreSQL
 - Server Actions로 모든 CRUD 처리 (별도 API 레이어 없음)
 
 ## Getting Started
 
-```bash
-npm install
-npx prisma migrate dev   # DB 생성 + 마이그레이션 적용
-npm run db:seed          # 데모 데이터 삽입 (이미 데이터가 있으면 스킵)
-npm run dev
-```
+1. Supabase 프로젝트를 만들고 (또는 기존 프로젝트를 사용) `.env`를 준비합니다.
+
+   ```bash
+   cp .env.example .env
+   # .env를 열어 Supabase 프로젝트의 DATABASE_URL / DIRECT_URL로 채워주세요.
+   # Project Settings -> Database -> Connection string 에서 확인할 수 있습니다.
+   ```
+
+2. 마이그레이션과 데모 데이터를 적용합니다.
+
+   ```bash
+   npm install
+   npx prisma migrate deploy   # 커밋된 마이그레이션을 그대로 적용 (스키마 변경 없음)
+   npm run db:seed             # 데모 데이터 삽입 (이미 데이터가 있으면 자동 스킵)
+   npm run dev
+   ```
 
 http://localhost:3000 에서 확인할 수 있습니다.
+
+### 환경변수
+
+| 변수 | 용도 |
+|---|---|
+| `DATABASE_URL` | 런타임에서 앱이 사용하는 pooled 연결 (Supabase PgBouncer, 6543 포트) |
+| `DIRECT_URL` | 마이그레이션 전용 direct 연결 (5432 포트) |
+
+두 값 모두 Supabase 대시보드의 **Project Settings → Database → Connection string**에서 확인할 수 있습니다. `.env`는 커밋하지 않고(`.gitignore`에 포함), `.env.example`만 저장소에 둡니다.
+
+### Vercel 배포
+
+1. GitHub 저장소를 Vercel 프로젝트로 import 합니다.
+2. Vercel 프로젝트 설정 → Environment Variables에 `DATABASE_URL`, `DIRECT_URL`을 등록합니다.
+3. `package.json`의 `postinstall` 스크립트(`prisma generate`)가 빌드 시 자동으로 Prisma Client를 생성합니다.
+4. 마이그레이션은 Vercel 빌드에 포함되어 있지 않습니다 — Supabase DB에 스키마를 최초 적용할 때 로컬에서 한 번 `npx prisma migrate deploy`를 실행해주세요 (이후 스키마 변경 시에도 동일).
+
+### 알려진 제한사항
+
+- Study의 이미지/스크린샷 업로드는 로컬 파일시스템(`public/uploads`)에 저장합니다. Vercel 등 서버리스 환경은 배포 시마다 파일시스템이 초기화되고 쓰기가 제한되어 있어, **업로드한 이미지가 영구 저장되지 않습니다** (다른 필드 저장에는 영향 없음 — 이미지만 저장되지 않고 조용히 건너뜁니다). 이미지 첨부를 실제로 계속 쓰실 계획이라면 Supabase Storage 등 별도 파일 스토리지 연동이 필요하며, 이번 작업 범위에는 포함하지 않았습니다.
 
 ## 메인 메뉴
 
@@ -42,4 +72,4 @@ Study ─┬─ StudyIdeaLink ─┬─ Idea ── Experiment ─┬─ Publish
 ```
 
 - 모든 참조는 대상이 삭제돼도 앱이 깨지지 않도록 옵션(nullable) FK + `onDelete: SetNull` 또는 하위 데이터만 함께 삭제되는 `onDelete: Cascade`로 설계했습니다.
-- SQLite는 네이티브 enum을 지원하지 않아, enum류 필드는 문자열로 저장하고 `app/lib/types.ts`에 union 타입 + 라벨로 제약을 걸어둡니다.
+- enum류 필드는 문자열로 저장하고 `app/lib/types.ts`에 union 타입 + 라벨로 제약을 걸어둡니다 (SQLite 시절 설계를 그대로 유지 — PostgreSQL 네이티브 enum으로 바꾸지 않았습니다).

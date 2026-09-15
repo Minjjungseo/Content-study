@@ -16,7 +16,7 @@ export const STUDY_TYPE_LABEL: Record<StudyType, string> = {
 export const ACCOUNTS = ["HEYELIA", "JAEJAE_MOMMY", "MINJUNG_ALSO", "COMMON"] as const;
 export type Account = (typeof ACCOUNTS)[number];
 
-export const IDEA_ACCOUNTS = ["HEYELIA", "JAEJAE_MOMMY"] as const;
+export const IDEA_ACCOUNTS = ["HEYELIA", "JAEJAE_MOMMY", "MINJUNG_ALSO"] as const;
 
 export const ACCOUNT_LABEL: Record<Account, string> = {
   HEYELIA: "heyelia",
@@ -161,6 +161,7 @@ export const CONTENT_IP_OPTIONS: Record<string, string[]> = {
     "공구",
     "기타",
   ],
+  MINJUNG_ALSO: ["기타"],
 };
 
 // Study attachments: reference documents to keep, not analyze (yet).

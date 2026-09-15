@@ -4,6 +4,13 @@ import { prisma } from "@/app/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+export type IdeaFormState = { error?: string };
+
+const SAVE_ERROR: IdeaFormState = {
+  error: "아이디어를 저장하지 못했습니다. 다시 시도해주세요.",
+};
+const DELETE_ERROR = "아이디어를 삭제하지 못했습니다. 다시 시도해주세요.";
+
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
   if (typeof v !== "string") return null;
@@ -18,7 +25,7 @@ function buildIdeaData(formData: FormData) {
     contentIP: str(formData, "contentIP"),
     coreMessage: str(formData, "coreMessage"),
     memo: str(formData, "memo"),
-    myPriority: str(formData, "myPriority") ?? "P3",
+    myPriority: str(formData, "myPriority") ?? "P2",
     status: str(formData, "status") ?? "IDEA",
     shootDifficulty: str(formData, "shootDifficulty") ?? "MEDIUM",
     needsShoot: formData.get("needsShoot") === "on",
@@ -28,15 +35,34 @@ function buildIdeaData(formData: FormData) {
   };
 }
 
-export async function createIdea(formData: FormData) {
-  const idea = await prisma.idea.create({ data: buildIdeaData(formData) });
+export async function createIdea(
+  _prevState: IdeaFormState,
+  formData: FormData
+): Promise<IdeaFormState> {
+  let ideaId: string;
+  try {
+    const idea = await prisma.idea.create({ data: buildIdeaData(formData) });
+    ideaId = idea.id;
+  } catch (err) {
+    console.error("createIdea failed:", err);
+    return SAVE_ERROR;
+  }
   revalidatePath("/ideas");
   revalidatePath("/");
-  redirect(`/ideas/${idea.id}`);
+  redirect(`/ideas/${ideaId}`);
 }
 
-export async function updateIdea(id: string, formData: FormData) {
-  await prisma.idea.update({ where: { id }, data: buildIdeaData(formData) });
+export async function updateIdea(
+  id: string,
+  _prevState: IdeaFormState,
+  formData: FormData
+): Promise<IdeaFormState> {
+  try {
+    await prisma.idea.update({ where: { id }, data: buildIdeaData(formData) });
+  } catch (err) {
+    console.error("updateIdea failed:", err);
+    return SAVE_ERROR;
+  }
   revalidatePath("/ideas");
   revalidatePath(`/ideas/${id}`);
   revalidatePath("/");
@@ -44,7 +70,12 @@ export async function updateIdea(id: string, formData: FormData) {
 }
 
 export async function deleteIdea(id: string) {
-  await prisma.idea.delete({ where: { id } });
+  try {
+    await prisma.idea.delete({ where: { id } });
+  } catch (err) {
+    console.error("deleteIdea failed:", err);
+    throw new Error(DELETE_ERROR);
+  }
   revalidatePath("/ideas");
   revalidatePath("/");
   redirect("/ideas");

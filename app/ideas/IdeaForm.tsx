@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import type { Idea } from "@prisma/client";
 import {
   IDEA_ACCOUNTS,
@@ -17,6 +17,7 @@ import {
   LEVEL_LABEL,
 } from "@/app/lib/types";
 import { Field, inputClass, SubmitButton } from "@/app/components/ui/Form";
+import type { IdeaFormState } from "@/app/ideas/actions";
 
 export function IdeaForm({
   idea,
@@ -24,15 +25,21 @@ export function IdeaForm({
   submitLabel = "저장",
 }: {
   idea?: Idea;
-  action: (formData: FormData) => void;
+  action: (prevState: IdeaFormState, formData: FormData) => Promise<IdeaFormState>;
   submitLabel?: string;
 }) {
   const [account, setAccount] = useState<string>(idea?.account ?? "HEYELIA");
   const [showMore, setShowMore] = useState(Boolean(idea));
   const ipOptions = CONTENT_IP_OPTIONS[account] ?? [];
+  const [state, formAction] = useActionState(action, {});
 
   return (
-    <form action={action} className="space-y-5">
+    <form action={formAction} className="space-y-5">
+      {state?.error && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {state.error}
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <Field label="콘텐츠 제목 *" htmlFor="title">
@@ -84,7 +91,7 @@ export function IdeaForm({
           <select
             id="myPriority"
             name="myPriority"
-            defaultValue={idea?.myPriority ?? "P3"}
+            defaultValue={idea?.myPriority ?? "P2"}
             className={inputClass}
           >
             {PRIORITIES.map((p) => (

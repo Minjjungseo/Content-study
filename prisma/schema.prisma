@@ -1,0 +1,327 @@
+// Content Study Lab — Prisma schema
+// SAVE -> ANALYZE -> ONE THING -> IDEA -> PLAN -> PUBLISH -> REVIEW -> PLAYBOOK
+//
+// Enum-like fields are typed String (kept from the original SQLite schema)
+// and constrained to union literal types in app/lib/types.ts.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Study {
+  id         String    @id @default(cuid())
+  title      String
+  studyType  String // LEARNED | REFERENCE | INSIGHT
+  sourceName String?
+  url        String?
+  imageUrl   String?
+  memo       String?
+  account    String   @default("COMMON") // HEYELIA | JAEJAE_MOMMY | COMMON
+  category   String?
+  importance String   @default("MEDIUM") // LOW | MEDIUM | HIGH
+  tags       String? // comma-separated
+
+  // Analysis
+  keyContent         String? // 핵심 내용
+  applicableElements String? // comma-separated: Hook,Story,Visual,Editing,CTA,Format,Positioning,Trust,기타
+  oneThing           String? // ONE THING
+
+  // Reference-only breakdown
+  refHook       String?
+  refPromise    String?
+  refStructure  String?
+  refEmotion    String?
+  refVisual     String?
+  refPayoff     String?
+  refWhyItWorks String?
+
+  // Learned-only breakdown
+  learnedWhat  String? // 무엇을 배웠는가
+  learnedWhy   String? // 왜 중요한가
+  learnedWhere String? // 어디에 적용할 수 있는가
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studyIdeaLinks StudyIdeaLink[]
+  sourcedIdeas   Idea[]          @relation("IdeaSourceStudy")
+  attachments    StudyAttachment[]
+}
+
+model StudyAttachment {
+  id       String @id @default(cuid())
+  studyId  String
+  study    Study  @relation(fields: [studyId], references: [id], onDelete: Cascade)
+
+  fileName String // original file name shown in UI
+  fileUrl  String // storage path (public/uploads)
+  fileType String? // extension, e.g. pdf/ppt/pptx/doc/docx/txt/image
+  fileSize Int? // bytes, for display only
+
+  // Reserved for future AI analysis (not implemented yet).
+  extractedText String?
+
+  createdAt DateTime @default(now())
+}
+
+model Idea {
+  id        String  @id @default(cuid())
+  title     String
+  account   String  @default("HEYELIA") // HEYELIA | JAEJAE_MOMMY
+  contentIP String?
+
+  coreMessage String? // 핵심 메시지
+  memo        String? // 간단 메모
+
+  myPriority String @default("P3") // P1 | P2 | P3 | SOMEDAY
+  aiPriority Int? // reserved for future AI priority scoring
+
+  status String @default("IDEA") // IDEA | PLANNED | FILMED | EDITING | READY | PUBLISHED | REVIEWED
+
+  shootDifficulty    String  @default("MEDIUM") // EASY | MEDIUM | HARD
+  needsShoot         Boolean @default(true)
+  hasExistingFootage Boolean @default(false)
+  brandValue         String  @default("MEDIUM") // HIGH | MEDIUM | LOW
+
+  sourceStudyId String?
+  sourceStudy   Study?  @relation("IdeaSourceStudy", fields: [sourceStudyId], references: [id], onDelete: SetNull)
+  oneThing      String? // ONE THING chosen to test
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studyLinks  StudyIdeaLink[]
+  experiments Experiment[]
+}
+
+model StudyIdeaLink {
+  id        String   @id @default(cuid())
+  studyId   String
+  ideaId    String
+  createdAt DateTime @default(now())
+
+  study Study @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  idea  Idea  @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@unique([studyId, ideaId])
+}
+
+model Experiment {
+  id     String @id @default(cuid())
+  ideaId String
+  idea   Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  oneThingToTest String? // ONE THING TO TEST
+
+  hook              String?
+  coreMessage       String?
+  structureSteps    String? // newline-separated steps
+  neededShooting    String? // 필요한 촬영
+  existingFootage   String? // 사용할 기존 촬영본
+  cta               String?
+  thumbnailNote     String?
+  thumbnailImageUrl String?
+  captionMemo       String?
+
+  hypothesis String? // 실험 가설
+
+  status String @default("PLANNED") // PLANNED | FILMED | EDITING | READY | PUBLISHED | REVIEWED
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  publishedContents PublishedContent[]
+  review            Review?
+  playbookEvidence  PlaybookEvidence[]
+}
+
+model PublishedContent {
+  id           String     @id @default(cuid())
+  experimentId String
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  platform           String // INSTAGRAM | TIKTOK | YOUTUBE
+  publishedAt        DateTime?
+  actualHook         String?
+  actualThumbnailUrl String?
+  videoLength        Int? // seconds
+  url                String?
+
+  createdAt DateTime @default(now())
+
+  performance Performance?
+}
+
+model Performance {
+  id                 String           @id @default(cuid())
+  publishedContentId String           @unique
+  publishedContent   PublishedContent @relation(fields: [publishedContentId], references: [id], onDelete: Cascade)
+
+  views          Int?
+  reach          Int?
+  avgWatchTime   Float? // seconds
+  retention3s    Float? // percentage
+  completionRate Float? // percentage
+  likes          Int?
+  comments       Int?
+  saves          Int?
+  shares         Int?
+  profileVisits  Int?
+  followsGained  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Review {
+  id           String     @id @default(cuid())
+  experimentId String     @unique
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  whatWentWell   String? // 잘된 점
+  whatWasLacking String? // 부족했던 점
+  unexpected     String? // 예상과 달랐던 점
+  feelings       String? // 만들면서 느낀 점
+  whatToChange   String? // 다시 만든다면 바꿀 것
+  oneLearning    String? // 이번 콘텐츠에서 배운 한 가지
+
+  result String? // SUPPORTED | INCONCLUSIVE | NOT_SUPPORTED
+
+  whatWeLearned      String?
+  nextOneThing       String?
+  nextExperimentNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  playbookEvidence PlaybookEvidence[]
+}
+
+model PlaybookRule {
+  id          String  @id @default(cuid())
+  title       String
+  category    String  @default("OTHER") // HOOK | STORY | STRUCTURE | VISUAL | CTA | EDITING | CONVERSION | TRUST | OTHER
+  description String?
+
+  appliedAccounts  String? // comma-separated
+  appliedContentIP String?
+  memo             String?
+
+  status String @default("CANDIDATE") // CANDIDATE | VERIFIED
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Legacy (Study/Idea/Experiment/Review era) — kept, no longer written by the app.
+  evidence PlaybookEvidence[]
+
+  links RecordPlaybookLink[]
+}
+
+model PlaybookEvidence {
+  id             String   @id @default(cuid())
+  playbookRuleId String
+  experimentId   String
+  reviewId       String?
+  createdAt      DateTime @default(now())
+
+  playbookRule PlaybookRule @relation(fields: [playbookRuleId], references: [id], onDelete: Cascade)
+  experiment   Experiment   @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  review       Review?      @relation(fields: [reviewId], references: [id], onDelete: SetNull)
+
+  @@unique([playbookRuleId, experimentId])
+}
+
+// ---------------------------------------------------------------------------
+// LearningRecord era (current model) — SOURCE -> APPLY -> REVIEW -> NEXT in a
+// single record instead of separate Study/Idea/Experiment/PublishedContent/
+// Performance/Review rows. The models above (Study..PlaybookEvidence) are kept
+// as a read-only archive of pre-existing data; nothing new writes to them.
+// ---------------------------------------------------------------------------
+
+model LearningRecord {
+  id String @id @default(cuid())
+
+  // SOURCE
+  type       String // LECTURE | REFERENCE | SELF_STUDY | CONTENT_REVIEW | COMMERCE_REVIEW
+  account    String  @default("COMMON") // HEYELIA | JAEJAE_MOMMY | MINJUNG_DOING | COMMON
+  title      String
+  sourceUrl  String?
+  sourceMemo String?
+  takeaway   String? // 내가 가져갈 한 가지
+  priority   String  @default("P2") // P1 | P2 | P3
+  tags       String? // comma-separated
+
+  // APPLY
+  applyTitle    String? // 적용 콘텐츠 제목
+  contentSeries String?
+  applyPoint    String? // 이번에 적용할 한 가지 (SOURCE.takeaway를 기본값으로 프리필)
+  hook          String?
+  plan          String? // 간단한 콘텐츠 기획
+  shootingMemo  String?
+
+  // REVIEW — objective (platform-reported numbers, all optional)
+  publishedUrl  String?
+  publishedAt   DateTime?
+  views         Int?
+  reach         Int?
+  avgWatchTime  Float? // seconds
+  retentionRate Float? // percentage
+  saves         Int?
+  shares        Int?
+  comments      Int?
+  follows       Int?
+
+  // REVIEW — subjective
+  good     String? // 잘된 점
+  problem  String? // 아쉬운 점
+  learning String? // 그래서 배운 것
+
+  // NEXT
+  nextThing String? // 다음에 바꿀 한 가지
+  decision  String? // REPEAT | MODIFY | STOP
+
+  playbookSaved Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attachments   RecordAttachment[]
+  playbookLinks RecordPlaybookLink[]
+}
+
+model RecordAttachment {
+  id       String         @id @default(cuid())
+  recordId String
+  record   LearningRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  fileName String
+  fileUrl  String
+  fileType String?
+  fileSize Int?
+
+  // Reserved for future AI analysis (not implemented yet).
+  extractedText String?
+
+  createdAt DateTime @default(now())
+}
+
+model RecordPlaybookLink {
+  id             String @id @default(cuid())
+  recordId       String
+  playbookRuleId String
+
+  record       LearningRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  playbookRule PlaybookRule   @relation(fields: [playbookRuleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([recordId, playbookRuleId])
+}

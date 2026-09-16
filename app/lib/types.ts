@@ -1,103 +1,50 @@
-// Shared union types + Korean labels + option lists.
-// SQLite has no enum support, so Prisma stores these as plain strings;
-// this file is the single source of truth for valid values across the app.
+// Shared union types + Korean labels + option lists for LearningRecord.
+// Values are stored as plain strings in Postgres (no native enum); this file
+// is the single source of truth for valid values across the app.
 
-export const STUDY_TYPES = ["LEARNED", "REFERENCE", "INSIGHT"] as const;
-export type StudyType = (typeof STUDY_TYPES)[number];
+export const RECORD_TYPES = [
+  "LECTURE",
+  "REFERENCE",
+  "SELF_STUDY",
+  "CONTENT_REVIEW",
+  "COMMERCE_REVIEW",
+] as const;
+export type RecordType = (typeof RECORD_TYPES)[number];
 
-// UI labels only — internal values (LEARNED/REFERENCE/INSIGHT) are unchanged
-// so no DB migration is needed.
-export const STUDY_TYPE_LABEL: Record<StudyType, string> = {
-  LEARNED: "강의",
+export const RECORD_TYPE_LABEL: Record<RecordType, string> = {
+  LECTURE: "배움",
   REFERENCE: "레퍼런스",
-  INSIGHT: "내 스터디",
+  SELF_STUDY: "내 스터디",
+  CONTENT_REVIEW: "콘텐츠 복기",
+  COMMERCE_REVIEW: "공구 복기",
 };
 
-export const ACCOUNTS = ["HEYELIA", "JAEJAE_MOMMY", "MINJUNG_ALSO", "COMMON"] as const;
+export const ACCOUNTS = ["HEYELIA", "JAEJAE_MOMMY", "MINJUNG_DOING", "COMMON"] as const;
 export type Account = (typeof ACCOUNTS)[number];
-
-export const IDEA_ACCOUNTS = ["HEYELIA", "JAEJAE_MOMMY", "MINJUNG_ALSO"] as const;
 
 export const ACCOUNT_LABEL: Record<Account, string> = {
   HEYELIA: "heyelia",
   JAEJAE_MOMMY: "jaejae mommy",
-  MINJUNG_ALSO: "민정 또 뭐해?",
+  MINJUNG_DOING: "민정 또 뭐해?",
   COMMON: "공통",
 };
 
-export const LEVELS = ["LOW", "MEDIUM", "HIGH"] as const;
-export type Level = (typeof LEVELS)[number];
-
-export const LEVEL_LABEL: Record<Level, string> = {
-  LOW: "낮음",
-  MEDIUM: "보통",
-  HIGH: "높음",
-};
-
-export const PRIORITIES = ["P1", "P2", "P3", "SOMEDAY"] as const;
+export const PRIORITIES = ["P1", "P2", "P3"] as const;
 export type Priority = (typeof PRIORITIES)[number];
 
 export const PRIORITY_LABEL: Record<Priority, string> = {
-  P1: "P1 · 지금 만들 콘텐츠",
-  P2: "P2 · 다음 후보",
-  P3: "P3 · 당장은 아님",
-  SOMEDAY: "Someday · 보관",
+  P1: "P1 · 지금",
+  P2: "P2 · 다음",
+  P3: "P3 · 나중",
 };
 
-export const CONTENT_STATUSES = [
-  "IDEA",
-  "PLANNED",
-  "FILMED",
-  "EDITING",
-  "READY",
-  "PUBLISHED",
-  "REVIEWED",
-] as const;
-export type ContentStatus = (typeof CONTENT_STATUSES)[number];
+export const DECISIONS = ["REPEAT", "MODIFY", "STOP"] as const;
+export type Decision = (typeof DECISIONS)[number];
 
-export const EXPERIMENT_STATUSES = CONTENT_STATUSES.filter(
-  (s) => s !== "IDEA"
-) as Exclude<ContentStatus, "IDEA">[];
-
-export const STATUS_LABEL: Record<ContentStatus, string> = {
-  IDEA: "아이디어",
-  PLANNED: "기획 중",
-  FILMED: "촬영 완료",
-  EDITING: "편집 중",
-  READY: "게시 준비",
-  PUBLISHED: "게시 완료",
-  REVIEWED: "복기 완료",
-};
-
-export const SHOOT_DIFFICULTIES = ["EASY", "MEDIUM", "HARD"] as const;
-export type ShootDifficulty = (typeof SHOOT_DIFFICULTIES)[number];
-
-export const SHOOT_DIFFICULTY_LABEL: Record<ShootDifficulty, string> = {
-  EASY: "쉬움",
-  MEDIUM: "보통",
-  HARD: "어려움",
-};
-
-export const PLATFORMS = ["INSTAGRAM", "TIKTOK", "YOUTUBE"] as const;
-export type Platform = (typeof PLATFORMS)[number];
-
-export const PLATFORM_LABEL: Record<Platform, string> = {
-  INSTAGRAM: "Instagram",
-  TIKTOK: "TikTok",
-  YOUTUBE: "YouTube",
-};
-
-export const EXPERIMENT_RESULTS = [
-  "SUPPORTED",
-  "INCONCLUSIVE",
-  "NOT_SUPPORTED",
-] as const;
-export type ExperimentResult = (typeof EXPERIMENT_RESULTS)[number];
-
-export const RESULT_LABEL: Record<ExperimentResult, string> = {
-  SUPPORTED: "Supported",
-  INCONCLUSIVE: "Inconclusive",
-  NOT_SUPPORTED: "Not Supported",
+export const DECISION_LABEL: Record<Decision, string> = {
+  REPEAT: "반복",
+  MODIFY: "수정",
+  STOP: "중단",
 };
 
 export const PLAYBOOK_CATEGORIES = [
@@ -129,23 +76,11 @@ export const PLAYBOOK_STATUSES = ["CANDIDATE", "VERIFIED"] as const;
 export type PlaybookStatus = (typeof PLAYBOOK_STATUSES)[number];
 
 export const PLAYBOOK_STATUS_LABEL: Record<PlaybookStatus, string> = {
-  CANDIDATE: "Candidate",
-  VERIFIED: "Verified",
+  CANDIDATE: "검증 중",
+  VERIFIED: "검증됨",
 };
 
-export const APPLICABLE_ELEMENTS = [
-  "Hook",
-  "Story",
-  "Visual",
-  "Editing",
-  "CTA",
-  "Format",
-  "Positioning",
-  "Trust",
-  "기타",
-] as const;
-
-export const CONTENT_IP_OPTIONS: Record<string, string[]> = {
+export const CONTENT_SERIES_OPTIONS: Record<string, string[]> = {
   HEYELIA: [
     "Ask a Korean Shopping Host",
     "10 Minute",
@@ -161,15 +96,14 @@ export const CONTENT_IP_OPTIONS: Record<string, string[]> = {
     "공구",
     "기타",
   ],
-  MINJUNG_ALSO: ["기타"],
+  MINJUNG_DOING: ["기타"],
 };
 
-// Study attachments: reference documents to keep, not analyze (yet).
-// Large video files are intentionally out of scope — use the 원본 링크 field instead.
-export const STUDY_ATTACHMENT_ACCEPT =
-  ".pdf,.ppt,.pptx,.doc,.docx,.txt,image/*";
+// Record attachments: reference documents to keep, not analyze (yet).
+// Large video files are intentionally out of scope — use 출처/링크 instead.
+export const RECORD_ATTACHMENT_ACCEPT = ".pdf,.ppt,.pptx,.doc,.docx,.txt,image/*";
 
-export const STUDY_ATTACHMENT_EXT_LABEL: Record<string, string> = {
+export const RECORD_ATTACHMENT_EXT_LABEL: Record<string, string> = {
   pdf: "PDF",
   ppt: "PPT",
   pptx: "PPTX",

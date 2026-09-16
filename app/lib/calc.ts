@@ -1,4 +1,4 @@
-// Safe ratio calculations for Review objective data.
+// Safe ratio calculations for a LearningRecord's REVIEW numbers.
 // Any missing or zero denominator yields null instead of throwing/NaN/Infinity.
 
 function ratio(numerator?: number | null, denominator?: number | null): number | null {
@@ -6,40 +6,27 @@ function ratio(numerator?: number | null, denominator?: number | null): number |
   return (numerator / denominator) * 100;
 }
 
-export type PerformanceInput = {
-  views?: number | null;
+export type ReviewMetricsInput = {
   reach?: number | null;
-  avgWatchTime?: number | null;
-  retention3s?: number | null;
-  completionRate?: number | null;
-  likes?: number | null;
-  comments?: number | null;
   saves?: number | null;
   shares?: number | null;
-  profileVisits?: number | null;
-  followsGained?: number | null;
-  videoLength?: number | null;
+  comments?: number | null;
+  follows?: number | null;
 };
 
-export type PerformanceRatios = {
+export type ReviewMetricRatios = {
   saveRate: number | null;
   shareRate: number | null;
   commentRate: number | null;
-  likeRate: number | null;
-  profileVisitRate: number | null;
-  followConversionRate: number | null;
-  avgWatchRate: number | null;
+  followRate: number | null;
 };
 
-export function computeRatios(p: PerformanceInput): PerformanceRatios {
+export function computeRatios(m: ReviewMetricsInput): ReviewMetricRatios {
   return {
-    saveRate: ratio(p.saves, p.reach),
-    shareRate: ratio(p.shares, p.reach),
-    commentRate: ratio(p.comments, p.reach),
-    likeRate: ratio(p.likes, p.reach),
-    profileVisitRate: ratio(p.profileVisits, p.reach),
-    followConversionRate: ratio(p.followsGained, p.profileVisits),
-    avgWatchRate: ratio(p.avgWatchTime, p.videoLength),
+    saveRate: ratio(m.saves, m.reach),
+    shareRate: ratio(m.shares, m.reach),
+    commentRate: ratio(m.comments, m.reach),
+    followRate: ratio(m.follows, m.reach),
   };
 }
 

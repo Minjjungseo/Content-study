@@ -1,10 +1,12 @@
 # Content Study Lab
 
-배운 것을 저장하고 → ONE THING을 고르고 → 콘텐츠에 적용하고 → 게시 후 복기해서 → 나만의 콘텐츠 공식(Playbook)으로 쌓는 개인용 콘텐츠 스터디 앱입니다.
+본 것과 배운 것을 저장하고, 그중 하나를 내 콘텐츠에 적용하고, 실제 결과를 복기해서, 결국 나만의 콘텐츠 기준(Playbook)으로 만드는 개인 학습 기록 앱입니다. 콘텐츠 제작 진행 관리 도구가 아니라 "연구 노트"에 가깝습니다.
 
 ```
-SAVE → ANALYZE → ONE THING → IDEA → PLAN → PUBLISH → REVIEW → PLAYBOOK
+SOURCE → APPLY → REVIEW → NEXT → (선택) PLAYBOOK
 ```
+
+하나의 기록(`LearningRecord`) 안에서 SOURCE(본 것/배운 것) → APPLY(적용) → REVIEW(복기) → NEXT(다음)가 이어집니다. 처음엔 SOURCE만 저장하고, 나중에 상세 화면에서 이어서 채울 수 있습니다.
 
 ## Stack
 
@@ -63,24 +65,28 @@ npm run build        → prisma migrate deploy && next build (pending migration 
 
 ### 알려진 제한사항
 
-- Study의 이미지/스크린샷 및 첨부파일(PDF/PPT/DOC/TXT)은 로컬 파일시스템(`public/uploads`)에 저장합니다. Vercel 등 서버리스 환경은 배포 시마다 파일시스템이 초기화되고 쓰기가 제한되어 있어, **업로드한 파일이 영구 저장되지 않습니다** (다른 필드 저장에는 영향 없음 — 파일만 저장되지 않고 조용히 건너뜁니다). 파일 첨부를 실제로 계속 쓰실 계획이라면 Supabase Storage 등 별도 파일 스토리지 연동이 필요하며, 이번 작업 범위에는 포함하지 않았습니다. 대용량 원본(영상 강의 등)은 파일 업로드 대신 Study의 "원본 링크" 필드에 URL로 연결해두는 것을 권장합니다.
+- Record의 첨부파일(PDF/PPT/DOC/TXT/이미지)은 로컬 파일시스템(`public/uploads`)에 저장합니다. Vercel 등 서버리스 환경은 배포 시마다 파일시스템이 초기화되고 쓰기가 제한되어 있어, **업로드한 파일이 영구 저장되지 않습니다** (다른 필드 저장에는 영향 없음 — 파일만 저장되지 않고 조용히 건너뜁니다). 파일 첨부를 실제로 계속 쓰실 계획이라면 Supabase Storage 등 별도 파일 스토리지 연동이 필요하며, 이번 작업 범위에는 포함하지 않았습니다. 대용량 원본(영상 강의 등)은 파일 업로드 대신 "출처 링크" 필드에 URL로 연결해두는 것을 권장합니다.
 
 ## 메인 메뉴
 
-- **Home** — 지금 테스트 중인 ONE THING과 다음에 만들 콘텐츠(Priority 순)를 가장 먼저 보여줍니다.
-- **Study** — 강의/책(Learned), 레퍼런스(Reference), 인사이트(Insight)를 저장하고 분석합니다.
-- **Ideas** — 콘텐츠 후보를 저장하고 Priority(P1~Someday)로 관리하는 Idea Bank입니다.
-- **Lab** — 아이디어를 실제 실험(Experiment)으로 기획하고, 게시 정보를 기록합니다.
-- **Review** — 게시 후 객관적 데이터(자동 비율 계산 포함)와 주관적 복기를 남깁니다.
-- **Playbook** — 반복 검증된 원칙만 남기는 곳입니다.
+- **Home** — 지금 P1 기록, 최근 적용 중인 기록, 최근 복기, 다음에 적용할 ONE THING을 가장 먼저 보여줍니다.
+- **Records** — 모든 기록을 저장/검색/필터(배움·레퍼런스·내 스터디·콘텐츠 복기·공구 복기)하는 곳입니다. 카드를 누르면 상세로 이동합니다.
+- **Playbook** — Record의 REVIEW에서 "내 공식으로 저장"을 누르면 쌓이는, 반복 검증된 나만의 콘텐츠 기준입니다.
 
 ## 데이터 구조
 
 ```
-Study ─┬─ StudyIdeaLink ─┬─ Idea ── Experiment ─┬─ PublishedContent ── Performance
-       └─ (sourceStudy)  └─ (source/ONE THING)  ├─ Review ── PlaybookEvidence
-                                                  └─ PlaybookEvidence ── PlaybookRule
+LearningRecord ─┬─ RecordAttachment
+                └─ RecordPlaybookLink ── PlaybookRule
 ```
 
-- 모든 참조는 대상이 삭제돼도 앱이 깨지지 않도록 옵션(nullable) FK + `onDelete: SetNull` 또는 하위 데이터만 함께 삭제되는 `onDelete: Cascade`로 설계했습니다.
+하나의 `LearningRecord`가 SOURCE/APPLY/REVIEW/NEXT 필드를 모두 갖는 단일 테이블입니다 (구버전의 Study→Idea→Experiment→PublishedContent→Performance→Review처럼 여러 엔티티로 쪼개지지 않습니다). `PlaybookRule`은 `RecordPlaybookLink`를 통해 여러 Record와 연결되며, "검증 횟수"는 연결된 링크 수입니다.
+
+- 모든 참조는 대상이 삭제돼도 앱이 깨지지 않도록 `onDelete: Cascade`(첨부파일·연결 레코드)로 설계했습니다.
 - enum류 필드는 문자열로 저장하고 `app/lib/types.ts`에 union 타입 + 라벨로 제약을 걸어둡니다 (SQLite 시절 설계를 그대로 유지 — PostgreSQL 네이티브 enum으로 바꾸지 않았습니다).
+
+### 구버전 데이터 (Study/Idea/Experiment/...)
+
+`Study`, `Idea`, `StudyIdeaLink`, `Experiment`, `PublishedContent`, `Performance`, `Review`, `PlaybookEvidence` 테이블은 구조 단순화 이전 데이터를 보존하기 위해 **읽기 전용 보관소로 남아 있습니다** (삭제하지 않았습니다). 앱 코드는 더 이상 이 테이블들을 사용하지 않습니다.
+
+`npm run migrate:records`를 실행하면 이 구버전 데이터를 `LearningRecord`로 옮깁니다. 이미 옮겨진 데이터가 있으면(= `LearningRecord`에 데이터가 있으면) 자동으로 아무것도 하지 않고 스킵합니다(`MIGRATE_FORCE=1`로 강제 재실행 가능, 로컬 검증용으로만 사용 권장). 매핑 규칙과 애매한 케이스 처리 방식은 `scripts/migrate-to-learning-record.ts` 상단 주석을 참고하세요.
